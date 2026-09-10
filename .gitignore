@@ -1,0 +1,33 @@
+# Build output
+*.class
+/app/build/
+/build/
+.gradle/
+.kotlin/
+/captures/
+.externalNativeBuild/
+.cxx/
+
+# Config local de tu máquina — nunca se comparte (rutas del SDK, etc.)
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Firmas — el debug.keystore SÍ se versiona a propósito (ver más abajo),
+# pero nunca una keystore de release ni sus contraseñas.
+*.jks
+!debug.keystore
+*.keystore
+!debug.keystore
+key.properties
+
+# Herramientas de Claude Code (config local del asistente, no es parte de la app)
+.claude/
+.agents/
+skills-lock.json
