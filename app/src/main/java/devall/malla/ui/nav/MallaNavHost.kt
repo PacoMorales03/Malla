@@ -1,5 +1,6 @@
 package devall.malla.ui.nav
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -24,6 +25,7 @@ import androidx.navigation.NavType
 import devall.malla.ui.cursos.CursoDetalleScreen
 import devall.malla.ui.cursos.CursosScreen
 import devall.malla.ui.planificacion.PlanificacionScreen
+import devall.malla.ui.update.ActualizacionBanner
 
 private object Rutas {
     const val CURSOS = "cursos"
@@ -71,23 +73,25 @@ fun MallaNavHost() {
             }
         }
     ) { paddingValues ->
-        NavHost(
-            navController = navController,
-            startDestination = Rutas.CURSOS,
-            modifier = Modifier.padding(paddingValues)
-        ) {
-            composable(Rutas.CURSOS) {
-                CursosScreen(onCursoClick = { navController.navigate(Rutas.cursoDetalle(it)) })
-            }
-            composable(Rutas.PLANIFICACION) {
-                PlanificacionScreen()
-            }
-            composable(
-                route = Rutas.CURSO_DETALLE,
-                arguments = listOf(navArgument("cursoId") { type = NavType.LongType })
-            ) { entry ->
-                val cursoId = entry.arguments?.getLong("cursoId") ?: return@composable
-                CursoDetalleScreen(cursoId = cursoId, onVolver = { navController.popBackStack() })
+        Column(modifier = Modifier.padding(paddingValues)) {
+            ActualizacionBanner()
+            NavHost(
+                navController = navController,
+                startDestination = Rutas.CURSOS
+            ) {
+                composable(Rutas.CURSOS) {
+                    CursosScreen(onCursoClick = { navController.navigate(Rutas.cursoDetalle(it)) })
+                }
+                composable(Rutas.PLANIFICACION) {
+                    PlanificacionScreen()
+                }
+                composable(
+                    route = Rutas.CURSO_DETALLE,
+                    arguments = listOf(navArgument("cursoId") { type = NavType.LongType })
+                ) { entry ->
+                    val cursoId = entry.arguments?.getLong("cursoId") ?: return@composable
+                    CursoDetalleScreen(cursoId = cursoId, onVolver = { navController.popBackStack() })
+                }
             }
         }
     }
