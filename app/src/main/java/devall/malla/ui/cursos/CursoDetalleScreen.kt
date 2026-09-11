@@ -2,6 +2,7 @@ package devall.malla.ui.cursos
 
 import android.app.Application
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
@@ -27,6 +29,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -45,6 +49,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import devall.malla.data.Asignatura
 import devall.malla.data.EstadoAsignatura
 import devall.malla.data.formatCreditos
+import devall.malla.data.ordenadasAprobadas
+import devall.malla.data.ordenadasNoAprobadas
 import kotlin.math.roundToInt
 
 @Composable
@@ -64,11 +70,24 @@ fun CursoDetalleScreen(
     var mostrarNuevaAsignatura by remember { mutableStateOf(false) }
     var asignaturaEnEdicion by remember { mutableStateOf<Asignatura?>(null) }
     var asignaturaAEliminar by remember { mutableStateOf<Asignatura?>(null) }
+    var asignaturaPendienteNota by remember { mutableStateOf<Asignatura?>(null) }
+    var asignaturaNotaAEditar by remember { mutableStateOf<Asignatura?>(null) }
     var mostrarEditarCurso by remember { mutableStateOf(false) }
     var menuCursoAbierto by remember { mutableStateOf(false) }
     var confirmarEliminarCurso by remember { mutableStateOf(false) }
+    var pestanaSeleccionada by remember { mutableStateOf(0) }
 
     val cursoActual = curso ?: return
+
+    val noAprobadas = remember(asignaturas) {
+        asignaturas.filter { it.estado != EstadoAsignatura.APROBADA }.ordenadasNoAprobadas()
+    }
+    val aprobadas = remember(asignaturas) {
+        asignaturas.filter { it.estado == EstadoAsignatura.APROBADA }.ordenadasAprobadas()
+    }
+    val mostrarPestanas = noAprobadas.isNotEmpty() && aprobadas.isNotEmpty()
+    val pestanaEfectiva = if (mostrarPestanas) pestanaSeleccionada else if (aprobadas.isNotEmpty()) 1 else 0
+    val listaVisible = if (pestanaEfectiva == 1) aprobadas else noAprobadas
 
     val creditosAprobados = asignaturas
         .filter { it.estado == EstadoAsignatura.APROBADA }
@@ -128,6 +147,21 @@ fun CursoDetalleScreen(
                 )
             }
 
+            if (mostrarPestanas) {
+                TabRow(selectedTabIndex = pestanaSeleccionada) {
+                    Tab(
+                        selected = pestanaSeleccionada == 0,
+                        onClick = { pestanaSeleccionada = 0 },
+                        text = { Text("No aprobadas (${noAprobadas.size})") }
+                    )
+                    Tab(
+                        selected = pestanaSeleccionada == 1,
+                        onClick = { pestanaSeleccionada = 1 },
+                        text = { Text("Aprobadas (${aprobadas.size})") }
+                    )
+                }
+            }
+
             if (asignaturas.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
                     Text(
@@ -143,17 +177,24 @@ fun CursoDetalleScreen(
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(asignaturas, key = { it.id }) { asignatura ->
+                    items(listaVisible, key = { it.id }) { asignatura ->
                         AsignaturaCard(
                             asignatura = asignatura,
                             onCambiarEstado = { nuevoEstado ->
-                                viewModel.actualizarAsignatura(asignatura.copy(estado = nuevoEstado))
+                                if (nuevoEstado == EstadoAsignatura.APROBADA) {
+                                    asignaturaPendienteNota = asignatura
+                                } else {
+                                    viewModel.actualizarAsignatura(
+                                        asignatura.copy(estado = nuevoEstado, nota = null)
+                                    )
+                                }
                             },
                             onCambiarConvocatorias = { nuevoValor ->
                                 viewModel.actualizarAsignatura(asignatura.copy(convocatoriasGastadas = nuevoValor))
                             },
                             onEditar = { asignaturaEnEdicion = asignatura },
-                            onEliminar = { asignaturaAEliminar = asignatura }
+                            onEliminar = { asignaturaAEliminar = asignatura },
+                            onEditarNota = { asignaturaNotaAEditar = asignatura }
                         )
                     }
                     item { Box(modifier = Modifier.padding(bottom = 88.dp)) }
@@ -208,6 +249,31 @@ fun CursoDetalleScreen(
         )
     }
 
+    asignaturaPendienteNota?.let { asignatura ->
+        DialogoNota(
+            nombreAsignatura = asignatura.nombre,
+            onConfirmar = { nota ->
+                viewModel.actualizarAsignatura(
+                    asignatura.copy(estado = EstadoAsignatura.APROBADA, nota = nota)
+                )
+                asignaturaPendienteNota = null
+            },
+            onCancelar = { asignaturaPendienteNota = null }
+        )
+    }
+
+    asignaturaNotaAEditar?.let { asignatura ->
+        DialogoNota(
+            nombreAsignatura = asignatura.nombre,
+            notaInicial = asignatura.nota?.toString() ?: "",
+            onConfirmar = { nota ->
+                viewModel.actualizarAsignatura(asignatura.copy(nota = nota))
+                asignaturaNotaAEditar = null
+            },
+            onCancelar = { asignaturaNotaAEditar = null }
+        )
+    }
+
     if (mostrarEditarCurso) {
         DialogoCurso(
             nombreInicial = cursoActual.nombre,
@@ -243,7 +309,8 @@ private fun AsignaturaCard(
     onCambiarEstado: (EstadoAsignatura) -> Unit,
     onCambiarConvocatorias: (Int) -> Unit,
     onEditar: () -> Unit,
-    onEliminar: () -> Unit
+    onEliminar: () -> Unit,
+    onEditarNota: () -> Unit
 ) {
     var menuAbierto by remember { mutableStateOf(false) }
 
@@ -265,19 +332,40 @@ private fun AsignaturaCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Box {
-                    IconButton(onClick = { menuAbierto = true }) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = "Más opciones")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (asignatura.estado == EstadoAsignatura.APROBADA && asignatura.nota != null) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable(onClick = onEditarNota)
+                        ) {
+                            Text(
+                                "%.1f".format(asignatura.nota),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Icon(
+                                Icons.Filled.Edit,
+                                contentDescription = "Editar nota",
+                                modifier = Modifier.padding(start = 4.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
-                    DropdownMenu(expanded = menuAbierto, onDismissRequest = { menuAbierto = false }) {
-                        DropdownMenuItem(text = { Text("Editar") }, onClick = {
-                            menuAbierto = false
-                            onEditar()
-                        })
-                        DropdownMenuItem(text = { Text("Eliminar") }, onClick = {
-                            menuAbierto = false
-                            onEliminar()
-                        })
+                    Box {
+                        IconButton(onClick = { menuAbierto = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "Más opciones")
+                        }
+                        DropdownMenu(expanded = menuAbierto, onDismissRequest = { menuAbierto = false }) {
+                            DropdownMenuItem(text = { Text("Editar") }, onClick = {
+                                menuAbierto = false
+                                onEditar()
+                            })
+                            DropdownMenuItem(text = { Text("Eliminar") }, onClick = {
+                                menuAbierto = false
+                                onEliminar()
+                            })
+                        }
                     }
                 }
             }

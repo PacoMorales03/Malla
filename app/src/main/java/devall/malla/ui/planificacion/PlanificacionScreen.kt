@@ -69,7 +69,6 @@ import java.time.ZoneOffset
 private val ALTURA_HORA = 52.dp
 private val ANCHO_ETIQUETA_HORA = 34.dp
 private val ANCHO_DIA_MINIMO = 36.dp
-private val ANCHO_DIA_MAXIMO = 96.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -148,7 +147,7 @@ fun PlanificacionScreen(viewModel: PlanificacionViewModel = viewModel()) {
 
             BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 val anchoDia = ((maxWidth - ANCHO_ETIQUETA_HORA) / 7)
-                    .coerceIn(ANCHO_DIA_MINIMO, ANCHO_DIA_MAXIMO)
+                    .coerceAtLeast(ANCHO_DIA_MINIMO)
 
                 Column(
                     modifier = Modifier

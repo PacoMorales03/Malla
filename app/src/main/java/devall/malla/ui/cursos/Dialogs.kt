@@ -147,3 +147,42 @@ fun DialogoCreditosCarrera(
         }
     )
 }
+
+@Composable
+fun DialogoNota(
+    nombreAsignatura: String,
+    notaInicial: String = "",
+    onConfirmar: (Double) -> Unit,
+    onCancelar: () -> Unit
+) {
+    var nota by remember { mutableStateOf(notaInicial) }
+    val valor = nota.replace(",", ".").toDoubleOrNull()
+    val valido = valor != null && valor in 5.0..10.0
+
+    AlertDialog(
+        onDismissRequest = onCancelar,
+        title = { Text("Nota de $nombreAsignatura") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Escala de 0 a 10, por ejemplo 7.5.")
+                OutlinedTextField(
+                    value = nota,
+                    onValueChange = { nota = it },
+                    label = { Text("Nota") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = valido,
+                onClick = { onConfirmar(valor!!) }
+            ) { Text("Guardar") }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancelar) { Text("Cancelar") }
+        }
+    )
+}

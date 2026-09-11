@@ -7,6 +7,7 @@ import devall.malla.MallaApplication
 import devall.malla.data.Curso
 import devall.malla.data.CursoConProgreso
 import devall.malla.data.ProgresoTotal
+import devall.malla.data.notaMedia
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -25,6 +26,10 @@ class CursosViewModel(application: Application) : AndroidViewModel(application) 
     /** null hasta que Room entrega el primer valor real (carrera aún sin configurar). */
     val creditosTotalesConfigurados: StateFlow<Double?> = repository.configCarrera
         .map { it?.creditosTotales }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val notaMedia: StateFlow<Double?> = repository.todasAsignaturas
+        .map { notaMedia(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun crearCurso(nombre: String, creditos: Double) = viewModelScope.launch {

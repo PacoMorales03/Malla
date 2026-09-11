@@ -23,5 +23,7 @@ data class Asignatura(
     val nombre: String,
     val creditos: Double,
     val estado: EstadoAsignatura = EstadoAsignatura.VACIO,
-    val convocatoriasGastadas: Int = 0
+    val convocatoriasGastadas: Int = 0,
+    /** Nota (0-10, un decimal) del expediente. Solo tiene sentido cuando estado == APROBADA. */
+    val nota: Double? = null
 )

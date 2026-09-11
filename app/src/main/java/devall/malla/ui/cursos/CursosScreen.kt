@@ -53,6 +53,7 @@ fun CursosScreen(
     val cursos by viewModel.cursos.collectAsState()
     val progresoTotal by viewModel.progresoTotal.collectAsState()
     val creditosTotales by viewModel.creditosTotalesConfigurados.collectAsState()
+    val notaMedia by viewModel.notaMedia.collectAsState()
 
     var mostrarNuevoCurso by remember { mutableStateOf(false) }
     var mostrarEditarCreditos by remember { mutableStateOf(false) }
@@ -115,6 +116,26 @@ fun CursosScreen(
                                 .fillMaxWidth()
                                 .padding(top = 10.dp)
                         )
+                        notaMedia?.let { nota ->
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Nota media",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    "%.2f".format(nota),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
                     }
                 }
             }
