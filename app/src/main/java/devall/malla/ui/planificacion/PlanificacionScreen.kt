@@ -1,6 +1,5 @@
 package devall.malla.ui.planificacion
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,7 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,11 +33,11 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -64,6 +62,7 @@ import devall.malla.ui.theme.BloqueColores
 import devall.malla.ui.theme.LocalBloqueColores
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneOffset
 
 private val ALTURA_HORA = 52.dp
@@ -81,7 +80,7 @@ fun PlanificacionScreen(viewModel: PlanificacionViewModel = viewModel()) {
 
     var bloqueEnEdicion by remember { mutableStateOf<BloqueHorario?>(null) }
     var nuevoBloqueFecha by remember { mutableStateOf<LocalDate?>(null) }
-    var nuevoBloqueMinutos by remember { mutableStateOf(HORA_INICIO_AGENDA + 60) }
+    var nuevoBloqueMinutos by remember { mutableStateOf(minutoActualRedondeado()) }
     var mostrarSelectorSemana by remember { mutableStateOf(false) }
 
     val ocurrencias = remember(bloques, lunes) { viewModel.ocurrenciasDeLaSemana(bloques) }
@@ -130,29 +129,35 @@ fun PlanificacionScreen(viewModel: PlanificacionViewModel = viewModel()) {
                     }
                 }
 
-                OutlinedCard(
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                    colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(18.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        ResumenHoras("Planificadas", minutosPlanificados, bloqueColores.estudio.copy(alpha = 0.6f))
-                        ResumenHoras("Reales", minutosReales, bloqueColores.estudio)
-                    }
+                    ResumenHoras("Planificadas", minutosPlanificados, bloqueColores.estudio.copy(alpha = 0.6f))
+                    ResumenHoras("Reales", minutosReales, bloqueColores.estudio, Modifier.padding(start = 28.dp))
                 }
             }
 
             BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 val anchoDia = ((maxWidth - ANCHO_ETIQUETA_HORA) / 7)
                     .coerceAtLeast(ANCHO_DIA_MINIMO)
+                val alturaDisponible = maxHeight
+                val scrollVertical = rememberScrollState()
+                val density = LocalDensity.current
+
+                LaunchedEffect(Unit) {
+                    val ahora = LocalTime.now()
+                    val offsetPx = with(density) {
+                        (ALTURA_HORA * ((ahora.hour * 60 + ahora.minute) / 60f)).toPx()
+                    }
+                    val viewportPx = with(density) { alturaDisponible.toPx() }
+                    scrollVertical.scrollTo((offsetPx - viewportPx / 2f).toInt().coerceAtLeast(0))
+                }
 
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
+                        .verticalScroll(scrollVertical)
                         .padding(bottom = 96.dp)
                 ) {
                     Row(modifier = Modifier.fillMaxWidth()) {
@@ -186,7 +191,7 @@ fun PlanificacionScreen(viewModel: PlanificacionViewModel = viewModel()) {
         FloatingActionButton(
             onClick = {
                 nuevoBloqueFecha = LocalDate.now()
-                nuevoBloqueMinutos = HORA_INICIO_AGENDA + 60
+                nuevoBloqueMinutos = minutoActualRedondeado()
             },
             modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp)
         ) {
@@ -242,18 +247,19 @@ private fun lunesDeSemanaDeHoy(): LocalDate {
 }
 
 @Composable
-private fun ResumenHoras(etiqueta: String, minutos: Int, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun ResumenHoras(etiqueta: String, minutos: Int, color: Color, modifier: Modifier = Modifier) {
+    Row(modifier = modifier, verticalAlignment = Alignment.Bottom) {
         Text(
             "%.1f h".format(minutos / 60.0),
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = color
         )
         Text(
-            etiqueta,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            " $etiqueta",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 1.dp)
         )
     }
 }

@@ -2,11 +2,12 @@ package devall.malla.ui.planificacion
 
 import devall.malla.data.TipoBloque
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-const val HORA_INICIO_AGENDA = 7 * 60
-const val HORA_FIN_AGENDA = 23 * 60
+const val HORA_INICIO_AGENDA = 0
+const val HORA_FIN_AGENDA = 24 * 60
 
 val diasSemana = listOf(
     1 to "Lunes", 2 to "Martes", 3 to "Miércoles", 4 to "Jueves",
@@ -21,6 +22,12 @@ fun nombreDia(dia: Int): String = diasSemana.first { it.first == dia }.second
 
 fun opcionesHora(desde: Int = HORA_INICIO_AGENDA, hasta: Int = HORA_FIN_AGENDA): List<Int> =
     (desde..hasta step 30).toList()
+
+fun minutoActualRedondeado(): Int {
+    val ahora = LocalTime.now()
+    val minutos = (ahora.hour * 60 + ahora.minute)
+    return ((minutos / 30) * 30).coerceIn(HORA_INICIO_AGENDA, HORA_FIN_AGENDA - 30)
+}
 
 fun formatoHora(minutos: Int): String {
     val h = minutos / 60
