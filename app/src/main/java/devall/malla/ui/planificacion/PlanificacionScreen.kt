@@ -68,6 +68,7 @@ import java.time.ZoneOffset
 private val ALTURA_HORA = 52.dp
 private val ANCHO_ETIQUETA_HORA = 34.dp
 private val ANCHO_DIA_MINIMO = 36.dp
+private val ALTURA_ENCABEZADO_DIA = 54.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -141,7 +142,7 @@ fun PlanificacionScreen(viewModel: PlanificacionViewModel = viewModel()) {
             BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 val anchoDia = ((maxWidth - ANCHO_ETIQUETA_HORA) / 7)
                     .coerceAtLeast(ANCHO_DIA_MINIMO)
-                val alturaDisponible = maxHeight
+                val alturaViewportGrid = (maxHeight - ALTURA_ENCABEZADO_DIA).coerceAtLeast(0.dp)
                 val scrollVertical = rememberScrollState()
                 val density = LocalDensity.current
 
@@ -150,38 +151,45 @@ fun PlanificacionScreen(viewModel: PlanificacionViewModel = viewModel()) {
                     val offsetPx = with(density) {
                         (ALTURA_HORA * ((ahora.hour * 60 + ahora.minute) / 60f)).toPx()
                     }
-                    val viewportPx = with(density) { alturaDisponible.toPx() }
+                    val viewportPx = with(density) { alturaViewportGrid.toPx() }
                     scrollVertical.scrollTo((offsetPx - viewportPx / 2f).toInt().coerceAtLeast(0))
                 }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(scrollVertical)
-                        .padding(bottom = 96.dp)
-                ) {
-                    Row(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Fila de días fija: no se mueve al hacer scroll por las horas.
+                    Row(
+                        modifier = Modifier.fillMaxWidth().height(ALTURA_ENCABEZADO_DIA),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Box(modifier = Modifier.width(ANCHO_ETIQUETA_HORA))
                         for (offset in 0..6) {
                             val fecha = lunes.plusDays(offset.toLong())
                             EncabezadoDia(fecha = fecha, ancho = anchoDia)
                         }
                     }
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        ColumnaHoras()
-                        for (offset in 0..6) {
-                            val fecha = lunes.plusDays(offset.toLong())
-                            ColumnaDia(
-                                ancho = anchoDia,
-                                ocurrenciasDelDia = ocurrencias.filter { it.fecha == fecha },
-                                bloqueColores = bloqueColores,
-                                nombreDeAsignatura = nombreDeAsignatura,
-                                onTapVacio = { minutos ->
-                                    nuevoBloqueFecha = fecha
-                                    nuevoBloqueMinutos = minutos
-                                },
-                                onTapBloque = { bloqueEnEdicion = it }
-                            )
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .verticalScroll(scrollVertical)
+                            .padding(bottom = 96.dp)
+                    ) {
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            ColumnaHoras()
+                            for (offset in 0..6) {
+                                val fecha = lunes.plusDays(offset.toLong())
+                                ColumnaDia(
+                                    ancho = anchoDia,
+                                    ocurrenciasDelDia = ocurrencias.filter { it.fecha == fecha },
+                                    bloqueColores = bloqueColores,
+                                    nombreDeAsignatura = nombreDeAsignatura,
+                                    onTapVacio = { minutos ->
+                                        nuevoBloqueFecha = fecha
+                                        nuevoBloqueMinutos = minutos
+                                    },
+                                    onTapBloque = { bloqueEnEdicion = it }
+                                )
+                            }
                         }
                     }
                 }
